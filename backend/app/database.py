@@ -6,7 +6,14 @@ client: AsyncIOMotorClient = None
 
 async def connect_db():
     global client
-    client = AsyncIOMotorClient(settings.MONGODB_URL)
+    client = AsyncIOMotorClient(
+        settings.MONGODB_URL,
+        tls=True,
+        tlsAllowInvalidCertificates=True,
+        serverSelectionTimeoutMS=10000,
+        connectTimeoutMS=10000,
+        socketTimeoutMS=10000,
+    )
 
 
 async def close_db():
