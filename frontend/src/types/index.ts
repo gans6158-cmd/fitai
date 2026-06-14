@@ -53,6 +53,10 @@ export interface PRRecord {
   reps: number
   estimated_1rm: number
   date: string
+  initial_weight?: number
+  initial_reps?: number
+  initial_estimated_1rm?: number
+  initial_date?: string
   created_at: string
 }
 

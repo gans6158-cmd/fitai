@@ -92,7 +92,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState<UserStats | null>(null)
   const [todayNutrition, setTodayNutrition] = useState<{ calories: number; protein: number; carbs: number; fats: number } | null>(null)
-  const [workoutAnalytics, setWorkoutAnalytics] = useState<{ total_workouts: number; total_volume: number; weekly_count: number; total_calories_burned?: number } | null>(null)
+  const [workoutAnalytics, setWorkoutAnalytics] = useState<{ total_workouts: number; total_volume: number; weekly_count: number; total_calories_burned?: number; streak?: number } | null>(null)
   const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([])
   const [weightLogs, setWeightLogs] = useState<WeightLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -267,7 +267,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-[#0d0d14] rounded-xl p-3 text-center">
               <Trophy className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
               <p className="text-sm font-bold text-white">{workoutAnalytics?.total_workouts || 0}</p>
@@ -286,6 +286,13 @@ export default function DashboardPage() {
                 {workoutAnalytics?.total_calories_burned ? Math.round(workoutAnalytics.total_calories_burned).toLocaleString() : '0'}
               </p>
               <p className="text-xs text-slate-500">kcal burned</p>
+            </div>
+            <div className="bg-[#0d0d14] rounded-xl p-3 text-center">
+              <Calendar className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
+              <p className="text-sm font-bold text-white">
+                {workoutAnalytics?.streak || 0} {(workoutAnalytics?.streak || 0) === 1 ? 'day' : 'days'}
+              </p>
+              <p className="text-xs text-slate-500">Streak 🔥</p>
             </div>
           </div>
         </div>

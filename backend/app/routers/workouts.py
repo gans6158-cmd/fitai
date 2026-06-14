@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from bson import ObjectId
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 from typing import List
 from ..database import get_db
 from ..schemas.workout import WorkoutCreate, WorkoutResponse, WorkoutCreateResponse, epley_1rm
@@ -72,7 +72,7 @@ async def create_workout(data: WorkoutCreate, current_user=Depends(get_current_u
         if best_1rm == 0:
             continue
         existing = await db.prs.find_one({"user_id": current_user["_id"], "exercise_name": ex_name})
-        if existing is None or best_1rm > existing.get("estimated_1rm", 0):
+        if existing is None:
             await db.prs.update_one(
                 {"user_id": current_user["_id"], "exercise_name": ex_name},
                 {"$set": {
@@ -82,9 +82,25 @@ async def create_workout(data: WorkoutCreate, current_user=Depends(get_current_u
                     "reps": best_reps,
                     "estimated_1rm": round(best_1rm, 2),
                     "date": date_str,
+                    "initial_weight": best_weight,
+                    "initial_reps": best_reps,
+                    "initial_estimated_1rm": round(best_1rm, 2),
+                    "initial_date": date_str,
                     "created_at": datetime.now(timezone.utc),
                 }},
                 upsert=True,
+            )
+            new_prs.append(ex_name)
+        elif best_1rm > existing.get("estimated_1rm", 0):
+            await db.prs.update_one(
+                {"user_id": current_user["_id"], "exercise_name": ex_name},
+                {"$set": {
+                    "weight": best_weight,
+                    "reps": best_reps,
+                    "estimated_1rm": round(best_1rm, 2),
+                    "date": date_str,
+                    "created_at": datetime.now(timezone.utc),
+                }},
             )
             new_prs.append(ex_name)
 
@@ -110,12 +126,28 @@ async def get_workout_analytics(current_user=Depends(get_current_user)):
         category_counts[cat] = category_counts.get(cat, 0) + 1
 
     total_calories = sum(w.get("calories_burned") or 0 for w in workouts)
+
+    # Streak: consecutive days with at least one workout, going back from today
+    workout_dates = set(w["date"] for w in workouts)
+    today = date.today()
+    streak = 0
+    check = today
+    while check.isoformat() in workout_dates:
+        streak += 1
+        check -= timedelta(days=1)
+    if streak == 0:
+        check = today - timedelta(days=1)
+        while check.isoformat() in workout_dates:
+            streak += 1
+            check -= timedelta(days=1)
+
     return {
         "total_workouts": len(workouts),
         "total_volume": round(total_volume, 1),
         "total_calories_burned": round(total_calories),
         "category_breakdown": category_counts,
         "weekly_count": len([w for w in workouts if (datetime.utcnow() - w["created_at"].replace(tzinfo=None)).days <= 7]),
+        "streak": streak,
     }
 
 

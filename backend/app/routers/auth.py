@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException, status
-from datetime import datetime, timezone
+from fastapi import APIRouter, HTTPException, status, Depends
+from datetime import datetime, timezone, timedelta
 from bson import ObjectId
+import secrets
+from pydantic import BaseModel
 from ..database import get_db
 from ..schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
-from ..utils.auth import hash_password, verify_password, create_access_token
+from ..utils.auth import hash_password, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -51,3 +53,76 @@ async def login(data: UserLogin):
 
     token = create_access_token({"sub": str(user["_id"])})
     return TokenResponse(access_token=token, user=serialize_user(user))
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/change-password", status_code=200)
+async def change_password(data: ChangePasswordRequest, current_user=Depends(get_current_user)):
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+    if not verify_password(data.current_password, current_user["hashed_password"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    db = get_db()
+    await db.users.update_one(
+        {"_id": current_user["_id"]},
+        {"$set": {"hashed_password": hash_password(data.new_password)}},
+    )
+    return {"message": "Password updated successfully"}
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+@router.post("/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest):
+    db = get_db()
+    user = await db.users.find_one({"email": data.email})
+    # Always return success to avoid email enumeration
+    if not user:
+        return {"message": "If that email exists, a reset code has been sent"}
+
+    code = secrets.token_hex(3).upper()  # 6-char hex code e.g. "A3F9B2"
+    expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    await db.password_resets.update_one(
+        {"email": data.email},
+        {"$set": {"code": hash_password(code), "expires": expires, "email": data.email}},
+        upsert=True,
+    )
+    # In production: send email. For now return code directly.
+    return {"message": "Reset code generated", "reset_code": code, "note": "In production this would be emailed"}
+
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    code: str
+    new_password: str
+
+
+@router.post("/reset-password")
+async def reset_password(data: ResetPasswordRequest):
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    db = get_db()
+    record = await db.password_resets.find_one({"email": data.email})
+    if not record:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset code")
+    if record["expires"].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Reset code has expired")
+    if not verify_password(data.code, record["code"]):
+        raise HTTPException(status_code=400, detail="Invalid reset code")
+
+    user = await db.users.find_one({"email": data.email})
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found")
+
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"hashed_password": hash_password(data.new_password)}},
+    )
+    await db.password_resets.delete_one({"email": data.email})
+    return {"message": "Password reset successfully"}

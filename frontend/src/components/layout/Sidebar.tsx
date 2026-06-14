@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import {
-  LayoutDashboard, Scale, Dumbbell, Apple, Image, Trophy, MessageSquare, LogOut, Zap,
+  LayoutDashboard, Scale, Dumbbell, Apple, Image, Trophy, MessageSquare, LogOut, Zap, Settings,
 } from 'lucide-react'
 
 const navItems = [
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/progress', icon: Image, label: 'Progress' },
   { href: '/achievements', icon: Trophy, label: 'Achievements' },
   { href: '/chat', icon: MessageSquare, label: 'AI Coach' },
+  { href: '/settings', icon: Settings, label: 'Settings' },
 ]
 
 export default function Sidebar() {

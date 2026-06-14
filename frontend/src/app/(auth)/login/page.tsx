@@ -29,6 +29,8 @@ export default function LoginPage() {
     }
   }
 
+  const inputClass = "w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f] px-4">
       <div className="w-full max-w-md">
@@ -41,45 +43,35 @@ export default function LoginPage() {
 
         <div className="bg-[#111118] border border-[#1e1e2e] rounded-2xl p-8">
           <h1 className="text-2xl font-bold text-white mb-2">Welcome back</h1>
-          <p className="text-slate-400 mb-6">Sign in to your account</p>
+          <p className="text-slate-400 mb-6">Sign in to continue your journey</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-sm font-medium text-slate-300 block mb-2">Email</label>
-              <input
-                type="email"
-                required
-                value={form.email}
+              <input type="email" required value={form.email}
                 onChange={e => setForm({ ...form, email: e.target.value })}
-                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
-                placeholder="you@example.com"
-              />
+                className={inputClass} placeholder="you@example.com" />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-300 block mb-2">Password</label>
-              <input
-                type="password"
-                required
-                value={form.password}
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-slate-300">Password</label>
+                <Link href="/forgot-password" className="text-xs text-indigo-400 hover:text-indigo-300 transition">
+                  Forgot password?
+                </Link>
+              </div>
+              <input type="password" required value={form.password}
                 onChange={e => setForm({ ...form, password: e.target.value })}
-                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
-                placeholder="••••••••"
-              />
+                className={inputClass} placeholder="••••••••" />
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition"
-            >
+            <button type="submit" disabled={loading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition">
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
-          <p className="text-center text-slate-400 mt-6">
+          <p className="text-center text-slate-400 text-sm mt-6">
             {"Don't have an account? "}
-            <Link href="/register" className="text-indigo-400 hover:text-indigo-300 font-medium">
-              Create one
-            </Link>
+            <Link href="/register" className="text-indigo-400 hover:text-indigo-300 font-medium">Create one free</Link>
           </p>
         </div>
       </div>

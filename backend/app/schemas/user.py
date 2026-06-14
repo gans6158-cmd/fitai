@@ -7,13 +7,14 @@ class UserCreate(BaseModel):
     name: str = Field(..., min_length=2)
     email: EmailStr
     password: str = Field(..., min_length=6)
-    age: int = Field(..., ge=10, le=120)
-    gender: str
-    height: float = Field(..., gt=0)
     current_weight: float = Field(..., gt=0)
     goal_weight: float = Field(..., gt=0)
-    fitness_goal: str
-    activity_level: str
+    # Optional — onboarding collects these progressively
+    age: int = Field(default=25, ge=10, le=120)
+    gender: str = "male"
+    height: float = Field(default=175.0, gt=0)
+    fitness_goal: str = "lose_fat"
+    activity_level: str = "moderate"
 
 
 class UserLogin(BaseModel):
@@ -29,6 +30,7 @@ class UserUpdate(BaseModel):
     goal_weight: Optional[float] = None
     fitness_goal: Optional[str] = None
     activity_level: Optional[str] = None
+    gender: Optional[str] = None
 
 
 class UserResponse(BaseModel):

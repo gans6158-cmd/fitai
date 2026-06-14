@@ -15,6 +15,10 @@ def serialize_pr(p: dict) -> PRResponse:
         reps=p["reps"],
         estimated_1rm=p["estimated_1rm"],
         date=p["date"],
+        initial_weight=p.get("initial_weight"),
+        initial_reps=p.get("initial_reps"),
+        initial_estimated_1rm=p.get("initial_estimated_1rm"),
+        initial_date=p.get("initial_date"),
         created_at=p["created_at"],
     )
 

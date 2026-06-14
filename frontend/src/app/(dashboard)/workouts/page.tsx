@@ -5,7 +5,7 @@ import { Workout, PRRecord } from '@/types'
 import toast from 'react-hot-toast'
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Dumbbell, Flame,
-  LayoutGrid, ClipboardList, Timer, X, Trophy, Zap, RotateCcw
+  LayoutGrid, ClipboardList, Timer, X, Trophy, Zap, RotateCcw, TrendingUp, RefreshCw
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { searchExercises, getExerciseMET, ExerciseInfo } from '@/lib/exerciseDatabase'
@@ -382,6 +382,25 @@ export default function WorkoutsPage() {
 
   const estimatedCals = calcCaloriesBurned(form, userWeight)
 
+  const repeatWorkout = (w: Workout) => {
+    setForm({
+      name: w.name,
+      category: w.category,
+      date: format(new Date(), 'yyyy-MM-dd'),
+      duration_minutes: w.duration_minutes?.toString() || '',
+      notes: w.notes || '',
+      exercises: w.exercises.map(ex => ({
+        name: ex.name,
+        sets: ex.sets.map(s => ({ reps: s.reps.toString(), weight: s.weight.toString() })),
+      })),
+    })
+    setSelectedPlan(null)
+    setSelectedDay(null)
+    setTab('log')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    toast.success('Last workout loaded — ready to repeat!')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -595,6 +614,11 @@ export default function WorkoutsPage() {
                     </span>
                   ) : null}
                   <span className="text-slate-400 text-sm hidden sm:block">{w.total_volume?.toLocaleString()} kg</span>
+                  <button
+                    onClick={e => { e.stopPropagation(); repeatWorkout(w) }}
+                    title="Repeat this workout"
+                    className="text-slate-500 hover:text-indigo-400 transition"
+                  ><RefreshCw className="w-4 h-4" /></button>
                   <button onClick={e => {
                     e.stopPropagation()
                     workoutApi.deleteWorkout(w.id).then(() => { setWorkouts(workouts.filter(x => x.id !== w.id)); toast.success('Deleted') })
@@ -681,6 +705,14 @@ export default function WorkoutsPage() {
                         <Zap className="w-3 h-3 text-indigo-400" />
                         <span className="text-indigo-400 text-xs font-medium">est. 1RM: {Math.round(pr.estimated_1rm)}kg</span>
                       </div>
+                      {pr.initial_estimated_1rm && pr.estimated_1rm > pr.initial_estimated_1rm && (
+                        <div className="flex items-center gap-1 justify-end mt-0.5">
+                          <TrendingUp className="w-3 h-3 text-emerald-400" />
+                          <span className="text-emerald-400 text-xs">
+                            +{Math.round(((pr.estimated_1rm - pr.initial_estimated_1rm) / pr.initial_estimated_1rm) * 100)}% since {pr.initial_date ? format(new Date(pr.initial_date + 'T12:00:00'), 'MMM d') : 'start'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
