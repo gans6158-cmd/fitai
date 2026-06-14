@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from datetime import datetime, date
+from datetime import datetime
+from datetime import date as DateType
 
 
 def epley_1rm(weight: float, reps: int) -> float:
@@ -25,7 +26,7 @@ class ExerciseCreate(BaseModel):
 class WorkoutCreate(BaseModel):
     name: str
     category: str
-    date: Optional[date] = None
+    date: Optional[DateType] = None
     exercises: List[ExerciseCreate]
     notes: Optional[str] = None
     duration_minutes: Optional[int] = None
@@ -37,7 +38,7 @@ class WorkoutResponse(BaseModel):
     user_id: str
     name: str
     category: str
-    date: date
+    date: DateType
     exercises: List[ExerciseCreate]
     notes: Optional[str] = None
     duration_minutes: Optional[int] = None

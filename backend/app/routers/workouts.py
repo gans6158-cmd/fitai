@@ -37,12 +37,13 @@ def serialize(w: dict) -> WorkoutResponse:
 async def create_workout(data: WorkoutCreate, current_user=Depends(get_current_user)):
     db = get_db()
     exercises_dict = [ex.model_dump() for ex in data.exercises]
-    workout_date = data.date or date.today()
+    raw_date = data.date or date.today()
+    date_str = raw_date.isoformat()  # "2026-06-14" — BSON can't encode datetime.date directly
     doc = {
         "user_id": current_user["_id"],
         "name": data.name,
         "category": data.category,
-        "date": workout_date,
+        "date": date_str,
         "exercises": exercises_dict,
         "notes": data.notes,
         "duration_minutes": data.duration_minutes,
@@ -80,7 +81,7 @@ async def create_workout(data: WorkoutCreate, current_user=Depends(get_current_u
                     "weight": best_weight,
                     "reps": best_reps,
                     "estimated_1rm": round(best_1rm, 2),
-                    "date": workout_date,
+                    "date": date_str,
                     "created_at": datetime.now(timezone.utc),
                 }},
                 upsert=True,
@@ -114,7 +115,7 @@ async def get_workout_analytics(current_user=Depends(get_current_user)):
         "total_volume": round(total_volume, 1),
         "total_calories_burned": round(total_calories),
         "category_breakdown": category_counts,
-        "weekly_count": len([w for w in workouts if (datetime.now(timezone.utc) - w["created_at"]).days <= 7]),
+        "weekly_count": len([w for w in workouts if (datetime.utcnow() - w["created_at"].replace(tzinfo=None)).days <= 7]),
     }
 
 

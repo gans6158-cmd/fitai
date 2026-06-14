@@ -26,7 +26,7 @@ async def add_weight(data: WeightLogCreate, current_user=Depends(get_current_use
     doc = {
         "user_id": current_user["_id"],
         "weight": data.weight,
-        "date": data.date or date.today(),
+        "date": (data.date or date.today()).isoformat(),
         "notes": data.notes,
         "created_at": datetime.now(timezone.utc),
     }

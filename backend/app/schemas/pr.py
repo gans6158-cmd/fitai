@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from datetime import datetime, date
+from datetime import datetime
+from datetime import date as DateType
 
 
 class PRResponse(BaseModel):
@@ -8,5 +9,5 @@ class PRResponse(BaseModel):
     weight: float
     reps: int
     estimated_1rm: float
-    date: date
+    date: DateType
     created_at: datetime

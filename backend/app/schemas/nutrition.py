@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional
-from datetime import datetime, date
+from datetime import datetime
+from datetime import date as DateType
 
 
 class NutritionLogCreate(BaseModel):
@@ -11,7 +12,7 @@ class NutritionLogCreate(BaseModel):
     fats: float = Field(..., ge=0)
     serving_size: Optional[str] = None
     meal_type: Optional[str] = "other"
-    date: Optional[date] = None
+    date: Optional[DateType] = None
 
 
 class NutritionLogResponse(BaseModel):
@@ -24,5 +25,5 @@ class NutritionLogResponse(BaseModel):
     fats: float
     serving_size: Optional[str] = None
     meal_type: str
-    date: date
+    date: DateType
     created_at: datetime

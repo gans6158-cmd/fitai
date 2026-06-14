@@ -31,7 +31,7 @@ async def log_food(data: NutritionLogCreate, current_user=Depends(get_current_us
     doc = {
         "user_id": current_user["_id"],
         **data.model_dump(exclude={"date"}),
-        "date": data.date or date.today(),
+        "date": (data.date or date.today()).isoformat(),
         "created_at": datetime.now(timezone.utc),
     }
     result = await db.nutrition_logs.insert_one(doc)
@@ -42,9 +42,9 @@ async def log_food(data: NutritionLogCreate, current_user=Depends(get_current_us
 @router.get("", response_model=List[NutritionLogResponse])
 async def get_nutrition_logs(log_date: Optional[date] = None, current_user=Depends(get_current_user)):
     db = get_db()
-    query = {"user_id": current_user["_id"]}
+    query: dict = {"user_id": current_user["_id"]}
     if log_date:
-        query["date"] = log_date
+        query["date"] = log_date.isoformat()
     logs = await db.nutrition_logs.find(query).sort("created_at", -1).to_list(None)
     return [serialize(l) for l in logs]
 
@@ -52,8 +52,8 @@ async def get_nutrition_logs(log_date: Optional[date] = None, current_user=Depen
 @router.get("/today")
 async def get_today_summary(current_user=Depends(get_current_user)):
     db = get_db()
-    today = date.today()
-    logs = await db.nutrition_logs.find({"user_id": current_user["_id"], "date": today}).to_list(None)
+    today_str = date.today().isoformat()
+    logs = await db.nutrition_logs.find({"user_id": current_user["_id"], "date": today_str}).to_list(None)
 
     from ..utils.fitness import calculate_bmr, calculate_tdee, calculate_protein_target
     weight = current_user["current_weight"]
@@ -70,14 +70,13 @@ async def get_today_summary(current_user=Depends(get_current_user)):
     consumed_fats = sum(l["fats"] for l in logs)
 
     return {
-        "consumed_calories": round(consumed_calories, 1),
+        "calories": round(consumed_calories, 1),
+        "protein": round(consumed_protein, 1),
+        "carbs": round(consumed_carbs, 1),
+        "fats": round(consumed_fats, 1),
         "remaining_calories": round(tdee - consumed_calories, 1),
         "target_calories": tdee,
-        "consumed_protein": round(consumed_protein, 1),
-        "remaining_protein": round(protein_target - consumed_protein, 1),
         "target_protein": protein_target,
-        "consumed_carbs": round(consumed_carbs, 1),
-        "consumed_fats": round(consumed_fats, 1),
         "logs": [serialize(l) for l in logs],
     }
 
