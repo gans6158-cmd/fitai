@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from .database import connect_db, close_db
+from .database import connect_db, close_db, get_db
 from .routers import auth, users, weight, workouts, nutrition, achievements, chat
 
 
@@ -39,3 +39,13 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+
+@app.get("/db-test")
+async def db_test():
+    try:
+        db = get_db()
+        await db.users.find_one({})
+        return {"status": "mongodb connected"}
+    except Exception as e:
+        return {"status": "mongodb error", "detail": str(e)}
