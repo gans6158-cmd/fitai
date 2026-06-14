@@ -3,7 +3,7 @@ from bson import ObjectId
 from datetime import datetime, timezone, date
 from typing import List
 from ..database import get_db
-from ..schemas.workout import WorkoutCreate, WorkoutResponse
+from ..schemas.workout import WorkoutCreate, WorkoutResponse, WorkoutCreateResponse, epley_1rm
 from ..utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/workouts", tags=["workouts"])
@@ -33,15 +33,16 @@ def serialize(w: dict) -> WorkoutResponse:
     )
 
 
-@router.post("", response_model=WorkoutResponse, status_code=201)
+@router.post("", response_model=WorkoutCreateResponse, status_code=201)
 async def create_workout(data: WorkoutCreate, current_user=Depends(get_current_user)):
     db = get_db()
     exercises_dict = [ex.model_dump() for ex in data.exercises]
+    workout_date = data.date or date.today()
     doc = {
         "user_id": current_user["_id"],
         "name": data.name,
         "category": data.category,
-        "date": data.date or date.today(),
+        "date": workout_date,
         "exercises": exercises_dict,
         "notes": data.notes,
         "duration_minutes": data.duration_minutes,
@@ -51,7 +52,42 @@ async def create_workout(data: WorkoutCreate, current_user=Depends(get_current_u
     }
     result = await db.workouts.insert_one(doc)
     doc["_id"] = result.inserted_id
-    return serialize(doc)
+
+    new_prs: list[str] = []
+    for ex in exercises_dict:
+        ex_name = ex.get("name", "").strip()
+        if not ex_name:
+            continue
+        best_1rm = 0.0
+        best_weight = 0.0
+        best_reps = 0
+        for s in ex.get("sets", []):
+            w = float(s.get("weight", 0))
+            r = int(s.get("reps", 0))
+            if w > 0 and r > 0:
+                e1rm = epley_1rm(w, r)
+                if e1rm > best_1rm:
+                    best_1rm, best_weight, best_reps = e1rm, w, r
+        if best_1rm == 0:
+            continue
+        existing = await db.prs.find_one({"user_id": current_user["_id"], "exercise_name": ex_name})
+        if existing is None or best_1rm > existing.get("estimated_1rm", 0):
+            await db.prs.update_one(
+                {"user_id": current_user["_id"], "exercise_name": ex_name},
+                {"$set": {
+                    "user_id": current_user["_id"],
+                    "exercise_name": ex_name,
+                    "weight": best_weight,
+                    "reps": best_reps,
+                    "estimated_1rm": round(best_1rm, 2),
+                    "date": workout_date,
+                    "created_at": datetime.now(timezone.utc),
+                }},
+                upsert=True,
+            )
+            new_prs.append(ex_name)
+
+    return WorkoutCreateResponse(workout=serialize(doc), new_prs=new_prs)
 
 
 @router.get("", response_model=List[WorkoutResponse])

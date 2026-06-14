@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from .database import connect_db, close_db, get_db
-from .routers import auth, users, weight, workouts, nutrition, achievements, chat, progress
+from .routers import auth, users, weight, workouts, nutrition, achievements, chat, progress, prs
 
 
 @asynccontextmanager
@@ -30,6 +30,7 @@ app.include_router(nutrition.router)
 app.include_router(achievements.router)
 app.include_router(chat.router)
 app.include_router(progress.router)
+app.include_router(prs.router)
 
 
 @app.get("/")

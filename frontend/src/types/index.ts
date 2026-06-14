@@ -42,6 +42,17 @@ export interface Workout {
   notes?: string
   duration_minutes?: number
   total_volume: number
+  calories_burned?: number
+  created_at: string
+}
+
+export interface PRRecord {
+  id: string
+  exercise_name: string
+  weight: number
+  reps: number
+  estimated_1rm: number
+  date: string
   created_at: string
 }
 

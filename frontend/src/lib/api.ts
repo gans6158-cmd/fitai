@@ -51,6 +51,10 @@ export const workoutApi = {
   getAnalytics: () => api.get('/api/workouts/analytics'),
 }
 
+export const prApi = {
+  getPRs: () => api.get('/api/prs'),
+}
+
 export const nutritionApi = {
   getLogs: (date?: string) => api.get('/api/nutrition', { params: date ? { log_date: date } : {} }),
   addLog: (data: unknown) => api.post('/api/nutrition', data),

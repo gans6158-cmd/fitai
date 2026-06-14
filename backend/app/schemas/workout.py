@@ -3,6 +3,14 @@ from typing import Optional, List
 from datetime import datetime, date
 
 
+def epley_1rm(weight: float, reps: int) -> float:
+    if reps <= 0 or weight <= 0:
+        return 0.0
+    if reps == 1:
+        return weight
+    return weight * (1 + reps / 30)
+
+
 class ExerciseSet(BaseModel):
     reps: int = Field(..., ge=1)
     weight: float = Field(..., ge=0)
@@ -36,3 +44,8 @@ class WorkoutResponse(BaseModel):
     total_volume: float
     calories_burned: Optional[float] = None
     created_at: datetime
+
+
+class WorkoutCreateResponse(BaseModel):
+    workout: WorkoutResponse
+    new_prs: List[str]
