@@ -66,3 +66,10 @@ export const chatApi = {
   sendMessage: (message: string) => api.post('/api/chat', { message }),
   getHistory: () => api.get('/api/chat/history'),
 }
+
+export const progressApi = {
+  getPhotos: () => api.get('/api/progress/photos'),
+  uploadPhoto: (data: { photo_data: string; label: string; date: string; notes: string }) =>
+    api.post('/api/progress/photos', data),
+  deletePhoto: (id: string) => api.delete(`/api/progress/photos/${id}`),
+}
