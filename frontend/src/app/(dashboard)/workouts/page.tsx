@@ -1,10 +1,11 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { workoutApi } from '@/lib/api'
 import { Workout } from '@/types'
 import toast from 'react-hot-toast'
 import { Plus, Trash2, ChevronDown, ChevronUp, Dumbbell } from 'lucide-react'
 import { format } from 'date-fns'
+import { searchExercises } from '@/lib/exerciseDatabase'
 
 const CATEGORIES = ['Push', 'Pull', 'Legs', 'Arms', 'Cardio']
 
@@ -13,6 +14,53 @@ interface ExerciseForm { name: string; sets: SetForm[] }
 interface WorkoutForm {
   name: string; category: string; date: string;
   duration_minutes: string; notes: string; exercises: ExerciseForm[]
+}
+
+function ExerciseInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setSuggestions([])
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const handleChange = (v: string) => {
+    onChange(v)
+    setSuggestions(searchExercises(v))
+  }
+
+  return (
+    <div className="relative w-full" ref={ref}>
+      <input
+        type="text"
+        required
+        value={value}
+        onChange={e => handleChange(e.target.value)}
+        onFocus={() => value && setSuggestions(searchExercises(value))}
+        placeholder="Exercise name (e.g. Bench Press)"
+        className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 transition"
+        autoComplete="off"
+      />
+      {suggestions.length > 0 && (
+        <div className="absolute z-10 w-full mt-1 bg-[#1a1a28] border border-[#1e1e2e] rounded-xl overflow-hidden shadow-xl">
+          {suggestions.map((ex, i) => (
+            <button
+              key={i}
+              type="button"
+              onMouseDown={() => { onChange(ex); setSuggestions([]) }}
+              className="w-full text-left px-4 py-2.5 text-white text-sm hover:bg-[#2a2a3e] transition"
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function WorkoutsPage() {
@@ -42,6 +90,17 @@ export default function WorkoutsPage() {
     exs[ei] = { ...exs[ei], sets: [...exs[ei].sets, { reps: '', weight: '' }] }
     return { ...f, exercises: exs }
   })
+
+  const removeSet = (ei: number, si: number) => setForm(f => {
+    const exs = [...f.exercises]
+    const sets = exs[ei].sets.filter((_, i) => i !== si)
+    exs[ei] = { ...exs[ei], sets: sets.length ? sets : [{ reps: '', weight: '' }] }
+    return { ...f, exercises: exs }
+  })
+
+  const removeExercise = (ei: number) => setForm(f => ({
+    ...f, exercises: f.exercises.length > 1 ? f.exercises.filter((_, i) => i !== ei) : f.exercises
+  }))
 
   const updateExerciseName = (ei: number, v: string) => setForm(f => {
     const exs = [...f.exercises]; exs[ei] = { ...exs[ei], name: v }; return { ...f, exercises: exs }
@@ -142,15 +201,29 @@ export default function WorkoutsPage() {
               </div>
               {form.exercises.map((ex, ei) => (
                 <div key={ei} className="bg-[#0a0a0f] rounded-xl p-4 space-y-3">
-                  <input type="text" required value={ex.name} onChange={e => updateExerciseName(ei, e.target.value)} className={inputClass + ' w-full'} placeholder="Exercise name (e.g. Bench Press)" />
-                  {ex.sets.map((set, si) => (
-                    <div key={si} className="flex gap-3 items-center">
-                      <span className="text-slate-500 text-sm w-12">Set {si + 1}</span>
-                      <input type="number" required value={set.reps} onChange={e => updateSet(ei, si, 'reps', e.target.value)} className={inputClass + ' w-24'} placeholder="Reps" />
-                      <input type="number" step="0.5" required value={set.weight} onChange={e => updateSet(ei, si, 'weight', e.target.value)} className={inputClass + ' w-24'} placeholder="kg" />
+                  <div className="flex items-center gap-2">
+                    <ExerciseInput value={ex.name} onChange={v => updateExerciseName(ei, v)} />
+                    {form.exercises.length > 1 && (
+                      <button type="button" onClick={() => removeExercise(ei)} className="text-slate-600 hover:text-red-400 transition shrink-0 text-sm">✕</button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-3 gap-2 text-xs text-slate-500 px-1">
+                      <span>Set</span><span>Reps</span><span>Weight (kg)</span>
                     </div>
-                  ))}
-                  <button type="button" onClick={() => addSet(ei)} className="text-slate-500 text-sm hover:text-slate-400">+ Add Set</button>
+                    {ex.sets.map((set, si) => (
+                      <div key={si} className="flex gap-2 items-center">
+                        <span className="text-slate-500 text-sm w-8 shrink-0">#{si + 1}</span>
+                        <input type="number" required value={set.reps} onChange={e => updateSet(ei, si, 'reps', e.target.value)} className={inputClass + ' w-full'} placeholder="Reps" />
+                        <input type="number" step="0.5" required value={set.weight} onChange={e => updateSet(ei, si, 'weight', e.target.value)} className={inputClass + ' w-full'} placeholder="kg" />
+                        {ex.sets.length > 1 && (
+                          <button type="button" onClick={() => removeSet(ei, si)} className="text-slate-600 hover:text-red-400 transition text-sm shrink-0">✕</button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button type="button" onClick={() => addSet(ei)} className="text-indigo-400 text-xs hover:text-indigo-300">+ Add Set</button>
                 </div>
               ))}
             </div>
