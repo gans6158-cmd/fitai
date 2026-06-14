@@ -114,7 +114,7 @@ export const EXERCISES: string[] = [
   'Kettlebell Swing',
   'Kettlebell Clean and Press',
   'Turkish Get-up',
-  'Farmer's Walk',
+  "Farmer's Walk",
 ]
 
 export function searchExercises(query: string): string[] {
