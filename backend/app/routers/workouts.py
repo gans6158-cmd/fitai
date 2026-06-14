@@ -28,6 +28,7 @@ def serialize(w: dict) -> WorkoutResponse:
         notes=w.get("notes"),
         duration_minutes=w.get("duration_minutes"),
         total_volume=w.get("total_volume", 0),
+        calories_burned=w.get("calories_burned"),
         created_at=w["created_at"],
     )
 
@@ -45,6 +46,7 @@ async def create_workout(data: WorkoutCreate, current_user=Depends(get_current_u
         "notes": data.notes,
         "duration_minutes": data.duration_minutes,
         "total_volume": calc_volume(exercises_dict),
+        "calories_burned": data.calories_burned,
         "created_at": datetime.now(timezone.utc),
     }
     result = await db.workouts.insert_one(doc)
@@ -70,9 +72,11 @@ async def get_workout_analytics(current_user=Depends(get_current_user)):
         cat = w["category"]
         category_counts[cat] = category_counts.get(cat, 0) + 1
 
+    total_calories = sum(w.get("calories_burned") or 0 for w in workouts)
     return {
         "total_workouts": len(workouts),
         "total_volume": round(total_volume, 1),
+        "total_calories_burned": round(total_calories),
         "category_breakdown": category_counts,
         "weekly_count": len([w for w in workouts if (datetime.now(timezone.utc) - w["created_at"]).days <= 7]),
     }

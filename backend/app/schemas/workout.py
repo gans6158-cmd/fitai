@@ -21,6 +21,7 @@ class WorkoutCreate(BaseModel):
     exercises: List[ExerciseCreate]
     notes: Optional[str] = None
     duration_minutes: Optional[int] = None
+    calories_burned: Optional[float] = None
 
 
 class WorkoutResponse(BaseModel):
@@ -33,4 +34,5 @@ class WorkoutResponse(BaseModel):
     notes: Optional[str] = None
     duration_minutes: Optional[int] = None
     total_volume: float
+    calories_burned: Optional[float] = None
     created_at: datetime
