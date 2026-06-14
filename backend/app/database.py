@@ -1,5 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from .config import settings
+import certifi
 
 client: AsyncIOMotorClient = None
 
@@ -8,8 +9,7 @@ async def connect_db():
     global client
     client = AsyncIOMotorClient(
         settings.MONGODB_URL,
-        tls=True,
-        tlsAllowInvalidCertificates=True,
+        tlsCAFile=certifi.where(),
         serverSelectionTimeoutMS=10000,
         connectTimeoutMS=10000,
         socketTimeoutMS=10000,
